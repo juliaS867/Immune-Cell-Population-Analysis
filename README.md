@@ -4,7 +4,7 @@
 
 ### Requirements
 - Python 3.7+
-- `make` (available by default in GitHub Codespaces)
+- `make`
 
 ### Quick Start
 
@@ -57,7 +57,7 @@ The dashboard has four tabs:
 - **Frequency Analysis** — filterable summary table and aggregations across all samples
 - **Responder Analysis** — statistical comparison (Mann-Whitney + FDR correction) of cell populations between responders and non-responders
 - **Baseline Cohort Analysis** — cohort characterisation at time=0 (project, response, sex, age breakdowns)
-- **Longitudinal & Subject Explorer** — time-course plots by condition/treatment and per-subject trajectory viewer
+- **Time-Course & Subject Explorer** — time-course plots by condition/treatment and per-subject trajectory viewer
 
 ---
 
@@ -82,7 +82,7 @@ cell_population_summaries  (summary_id PK, sample_id FK, cell_type_id FK,
 
 **Normalisation.** The schema is in third normal form. Subject demographics (age, sex, response) are stored once per subject rather than repeated across every sample row, and cell type names are stored once in a lookup table rather than as string columns. This eliminates update anomalies and redundancy.
 
-**Separation of entities.** The four core entities — projects, subjects, samples, and cell types — each have their own table with a clear primary key. Samples link to both subjects and projects via foreign keys, reflecting the real-world relationship that one subject can have multiple samples across multiple projects.
+**Separation of entities.** The four core entities (projects, subjects, samples, and cell types) each have their own table with a clear primary key. Samples link to both subjects and projects via foreign keys, reflecting the real-world relationship that one subject can have multiple samples across multiple projects.
 
 **Precomputed summaries.** `cell_population_summaries` stores the total count and percentage for each (sample, cell type) pair. These values are derived from `cell_counts` but are expensive to recompute on every query (requiring a window function over all rows for a sample). Precomputing them once at load time makes all downstream analytical queries simple and fast.
 
@@ -92,7 +92,7 @@ cell_population_summaries  (summary_id PK, sample_id FK, cell_type_id FK,
 
 With hundreds of projects, thousands of samples, and a growing set of analytics needs, this schema scales well in several ways:
 
-- **New cell populations** can be added by inserting a row into `cell_types` and running the loader — no schema changes required. The existing five populations are not hardcoded as columns.
+- **New cell populations** can be added by inserting a row into `cell_types` and running the loader with no schema changes required. The existing five populations are not hardcoded as columns.
 - **New sample metadata** (e.g. batch ID, site, collection date) can be added as columns to `samples` without affecting other tables.
 - **New subject attributes** (e.g. prior treatments) can be added to `subjects` in the same way.
 - **Analytical queries** across thousands of samples remain performant because they target the pre-aggregated `cell_population_summaries` table with indexed joins rather than scanning raw counts.
@@ -127,13 +127,13 @@ With hundreds of projects, thousands of samples, and a growing set of analytics 
 **Precomputed percentages at load time.** Rather than computing relative frequencies on every query, `load_data.py` calculates them once and stores them in `cell_population_summaries`. Every analytical script and the dashboard then queries this table directly, keeping query logic simple and consistent across all parts.
 
 
-**Highly customisable frequency analysis.** The Frequency Analysis tab exposes sidebar filters for every relevant dimension — project, condition, treatment, response, sample type, sex, time from treatment, and cell population so a researcher can slice the data to any combination of interest without writing a query. The summary table, aggregation table, bar chart, and heatmap all update live with the filters, and a sample-level breakdown appears automatically when the view is narrowed to a single sample.
+**Highly customisable frequency analysis.** The Frequency Analysis tab exposes sidebar filters for every relevant dimension (project, condition, treatment, response, sample type, sex, time from treatment, and cell population) so a researcher can slice the data to any combination of interest without writing a query. The summary table, aggregation table, bar chart, and heatmap all update live with the filters, and a sample-level breakdown appears automatically when the view is narrowed to a single sample.
 
-**Time-course and subject-level explorer.** A dedicated Time-Course & Subject Explorer tab was added beyond the core requirements to support the kind of questions that naturally arise in a clinical trial like for example, how does a cell population trend over treatment time for responders versus non-responders, or what does an individual patient's immune profile look like across their collected timepoints? Researchers can select any condition, treatment, and sample type to view population trajectories over time, and drill into any individual subject to see their full series in one chart.
+**Time-course and subject-level explorer.** I added a dedicated Time-Course & Subject Explorer tab that was beyond the core requirements to support the kind of questions that naturally arise in a clinical trial like for example, how does a cell population trend over treatment time for responders versus non-responders, or what does an individual patient's immune profile look like across their collected timepoints? Researchers can select any condition, treatment, and sample type to view population trajectories over time, and drill into any individual subject to see their full series in one chart.
 
 **Researcher-friendly UI.** Throughout the dashboard, results are designed to be immediately usable without needing to rerun code. Every tab includes download buttons so filtered tables and analysis outputs can be exported to CSV directly from the browser. Raw data underlying the responder analysis is downloadable separately from the statistics table, giving researchers flexibility to run their own follow-up analyses. Detailed subject-level data in the explorer is tucked into a collapsible expander to keep the view clean while still being accessible. Metric cards at the top of each tab give an at-a-glance summary before the detailed results load.
 
-**Statistical choices in Part 3.** Mann-Whitney U was chosen as the primary test because it makes no assumption about normality, which is appropriate for immune cell percentage data that can be skewed. Benjamini-Hochberg FDR correction is applied across all five populations to control the false discovery rate from multiple comparisons. Cohen's d and rank-biserial correlation are reported alongside p-values to quantify effect size, since statistical significance alone is insufficient to judge biological relevance.
+**Statistical choices in Part 3.** After researching, I chose to use Mann-Whitney U as the primary test because it makes no assumption about normality, which is appropriate for immune cell percentage data that can be skewed. Benjamini-Hochberg FDR correction is applied across all five populations to control the false discovery rate from multiple comparisons. Cohen's d and rank-biserial correlation are reported alongside p-values to quantify effect size, since statistical significance alone is insufficient to judge biological relevance.
 
 **Dashboard as a complement, not a replacement.** The standalone scripts (`part2`–`part4`) exist independently of the dashboard and produce their own outputs. The dashboard is an interactive layer on top of the same database useful for exploration, but the scripts ensure all required outputs can be reproduced programmatically without a browser.
 
