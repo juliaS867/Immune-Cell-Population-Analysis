@@ -135,7 +135,6 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     timepoints = sorted(df["time_from_treatment"].dropna().unique().tolist())
     selected_timepoints = st.sidebar.multiselect("Time from Treatment (days)", timepoints, default=timepoints)
 
-    sample_query = st.sidebar.text_input("Sample contains", "")
     population_query = st.sidebar.multiselect("Population", sorted(df["population"].unique().tolist()), default=sorted(df["population"].unique().tolist()))
 
     filtered = df[
@@ -148,9 +147,6 @@ def filter_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         & df["time_from_treatment"].isin(selected_timepoints)
         & df["population"].isin(population_query)
     ]
-
-    if sample_query:
-        filtered = filtered[filtered["sample"].str.contains(sample_query, case=False, na=False)]
 
     return filtered
 
