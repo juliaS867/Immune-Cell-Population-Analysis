@@ -49,7 +49,7 @@ outputs/
 
 ## Dashboard
 
-**Live link:** <!-- Add Streamlit Cloud URL here -->
+**Live link:** https://immune-cell-population-analysis-ewujkv6wo6clzrgwynaq2b.streamlit.app/
 
 To run locally: `make dashboard` then open `http://localhost:8501`.
 
